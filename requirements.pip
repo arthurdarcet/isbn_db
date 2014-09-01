@@ -1,0 +1,4 @@
+cherrypy       >= 3.2.4
+nose2          >= 0.4.7
+pymongo        >= 2.7
+pyyaml         >= 3.10

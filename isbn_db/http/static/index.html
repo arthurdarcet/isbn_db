@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>ISBN DB</title>
+		<meta charset="utf-8">
+		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+		<style>
+			#logs .data {
+				font-size: x-small;
+				background: none;
+				border: none;
+				padding: 0;
+				margin: 0;
+				max-height: 300px;
+				overflow-y: auto;
+			}
+			nav {
+				margin-top: 10px;
+			}
+			.task-buttons {
+				width: 170px;
+				text-align: right;
+			}
+			.nested-table {
+				background-color: transparent !important;
+				margin: 0;
+			}
+			.nested-table td {
+				border: 0 !important;
+			}
+			.search {
+				padding-right: 0 !important;
+			}
+			.search .navbar-form {
+				padding-right: 8px !important;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+			<nav class="navbar navbar-default" role="navigation">
+				<div class="navbar-header">
+					<a class="navbar-brand" href="/">ISBN DB</a>
+				</div>
+				<div class="col-sm-5 navbar-right search">
+					<div class="navbar-form">
+						<div class="input-group">
+							<span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+							<input type="text" class="form-control" placeholder="Search by title, authors, …">
+						</div>
+					</div>
+				</div>
+			</nav>
+			<div class="row">
+				<div class="col-sm-5">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">New file</h3>
+						</div>
+						<div class="panel-body">
+							<form class="form-inline" role="form" id="get-isbn">
+								<div class="input-group">
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-7">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Logs</h3>
+						</div>
+						<div class="panel-body" id="logs">
+							<div class="loading">Loading…</div>
+							<pre class="data hidden"></pre>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="tasks"></div>
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">Books</h3>
+						</div>
+						<table class="table table-striped">
+							<thead>
+								<tr>
+									<th width="1px">ISBN</th>
+									<th>Title</th>
+									<th class="hidden-sm hidden-xs">Authors</th>
+									<th class="hidden-xs">Identifiers</th>
+								</tr>
+							</thead>
+							<tbody class="books">
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script type="text/html" id="book-template">
+			<tr>
+				<td><code>{{isbn}}</code></td>
+				<td>{{title}}</td>
+				<td class="hidden-sm hidden-xs">{{authors}}</td>
+				<td class="hidden-xs">{{identifiers}}</td>
+			</tr>
+		</script>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+		<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+		<script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/1.0.0-rc.3/handlebars.min.js"></script>
+		<script src="static/index.js"></script>
+	</body>
+</html>

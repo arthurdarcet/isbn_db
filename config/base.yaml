@@ -1,0 +1,7 @@
+http:
+    host: 127.0.0.1
+    port: 4200
+
+mongo:
+    host: 127.0.0.1
+    database: isbn_db
