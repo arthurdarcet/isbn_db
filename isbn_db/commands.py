@@ -1,9 +1,5 @@
-import logging
-
 from . import http as http_module
 
-
-logger = logging.getLogger(__name__)
 
 def shell(**kwargs):
 	import IPython

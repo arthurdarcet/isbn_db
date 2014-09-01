@@ -1,3 +1,5 @@
+$.ajaxSettings.traditional = true;
+
 App = {};
 App.auto_refresh = true;
 App.Collections = {};
@@ -22,6 +24,7 @@ App.Collections.Books = Backbone.Collection.extend({
 	url: 'books',
 	current_page: -1,
 	params: {},
+	model: Backbone.Model.extend({idAttribute: '_id'}),
 	
 	initialize: function() {
 		this.container = $('.books');
@@ -104,11 +107,68 @@ App.Views.Logs = Backbone.View.extend({
 	}
 });
 
+App.Views.Form = Backbone.View.extend({
+	events: {
+		'submit': 'submit'
+	},
+	
+	submit: function(evt) {
+		var btn = this.$('button[type=submit]');
+		btn.removeClass('btn-success btn-danger');
+		btn.addClass('btn-warning disabled');
+		
+		$.ajax({
+			type: 'POST',
+			url: this.$el.attr('action'),
+			data: this.data(),
+		}).done(_.bind(function(data, status) {
+			if(this.done) this.done(data);
+			btn.addClass('btn-success');
+		}, this)).fail(function() {
+			console.log(arguments);
+			btn.text('Error!');
+			btn.addClass('btn-danger');
+		}).always(function() {
+			btn.removeClass('btn-warning disabled');
+		});
+		return false;
+	}
+});
+
+App.Views.AddBookForm = App.Views.Form.extend({
+	el: '#add-book',
+	
+	data: function() {
+		return {
+			title: this.$('input[name=title]').val(),
+			authors: this.$('input[name=authors]').val().split(','),
+			identifiers: this.$('input[name=identifiers]').val().split(','),
+		};
+	},
+	
+	done: function(data) {
+		App.books.add(data, {merge: true});
+	}
+});
+
+App.Views.AddISBNForm = App.Views.Form.extend({
+	el: '#add-isbn',
+	
+	data: function() {
+		return {
+			start: this.$('input[name=start]').val(),
+			end: this.$('input[name=end]').val().split(','),
+		};
+	}
+});
+
 
 $(document).ready(function() {
 	App.logs = new App.Views.Logs();
 	App.books = new App.Collections.Books();
 	App.search_bar = new App.Views.SearchBar();
+	App.add_book_form = new App.Views.AddBookForm();
+	App.add_isbn_form = new App.Views.AddISBNForm();
 	
 	App.logs.refresh();
 	

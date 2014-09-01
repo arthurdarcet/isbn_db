@@ -2,7 +2,8 @@ import cherrypy
 import logging
 import os.path
 
-from ..book import Book
+from ..models import Book
+from ..models import ISBN
 from . import utils
 
 
@@ -38,5 +39,34 @@ class App(utils.BaseApp):
 		except TypeError:
 			raise cherrypy.NotFound()
 		
-		books = list(Book.objects.find().sort('isbn', 1).skip(page * 50).limit(50))
-		return [b.json for b in books]
+		return Book.objects.find().sort('isbn', 1).skip(page * 50).limit(50)
+	
+	@utils.json_exposed
+	def add_book(self, title, authors=None, identifiers=None):
+		if authors is None:
+			authors = []
+		if not isinstance(authors, list):
+			authors = [authors]
+		if identifiers is None:
+			identifiers = []
+		if not isinstance(identifiers, list):
+			identifiers = [identifiers]
+		
+		try:
+			return Book.objects.get(identifiers={'$in': identifiers})
+		except Book.DoesNotExist:
+			try:
+				book = Book.objects.get(title=title, authors=authors)
+			except Book.DoesNotExist:
+				isbn = ISBN.free()
+				book = Book(title=title, authors=authors, identifiers=identifiers, isbn=isbn['isbn'])
+				isbn['book'] = book['_id']
+				isbn.save()
+			else:
+				book['identifiers'] += identifiers
+			book.save()
+			return book
+	
+	@utils.json_exposed
+	def add_isbn(self, start, end=None):
+		return {'added': ISBN.add(start, end or start)}

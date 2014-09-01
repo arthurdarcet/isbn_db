@@ -17,10 +17,6 @@
 			nav {
 				margin-top: 10px;
 			}
-			.task-buttons {
-				width: 170px;
-				text-align: right;
-			}
 			.nested-table {
 				background-color: transparent !important;
 				margin: 0;
@@ -52,20 +48,72 @@
 				</div>
 			</nav>
 			<div class="row">
-				<div class="col-sm-5">
+				<div class="col-sm-3">
 					<div class="panel panel-default">
 						<div class="panel-heading">
-							<h3 class="panel-title">New file</h3>
+							<h3 class="panel-title">New ISBN block</h3>
 						</div>
 						<div class="panel-body">
-							<form class="form-inline" role="form" id="get-isbn">
-								<div class="input-group">
+							<form class="form-horizontal" action="add_isbn" id="add-isbn">
+								<div class="form-group">
+									<span class="col-md-3 control-label">Start</span>
+									<div class="col-md-9">
+										<input type="text" class="form-control input-sm" name="start">
+									</div>
+								</div>
+								<div class="form-group">
+									<span class="col-md-3 control-label">End</span>
+									<div class="col-md-9">
+										<input type="text" class="form-control input-sm" name="end">
+									</div>
+								</div>
+								<div class="form-group">
+									<span class="col-md-3"></span>
+									<div class="col-md-9">
+										<button type="submit" class="btn btn-default pull-right">Add</button>
+									</div>
+								</div>
+								
+							</form>
+						</div>
+					</div>
+				</div>
+				<div class="col-sm-3">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h3 class="panel-title">New Book</h3>
+						</div>
+						<div class="panel-body">
+							<form class="form-horizontal" action="/add_book" id="add-book">
+								<div class="form-group">
+									<span class="col-md-3 control-label">Title</span>
+									<div class="col-md-9">
+										<input type="text" class="form-control input-sm" name="title">
+									</div>
+								</div>
+								<div class="form-group">
+									<span class="col-md-3 control-label">Authors</span>
+									<div class="col-md-9">
+										<input type="text" class="form-control input-sm" name="authors" placeholder="comma-separated list">
+									</div>
+								</div>
+								<div class="form-group">
+									<span class="col-md-3 control-label">Identifiers</span>
+									<div class="col-md-9">
+										<input type="text" class="form-control input-sm" name="identifiers" placeholder="comma-separated list">
+									</div>
+								</div>
+								<div class="form-group">
+									<span class="col-md-3"></span>
+									<div class="col-md-9">
+										<button type="submit" class="btn btn-default pull-right">Add</button>
+									</div>
 								</div>
 							</form>
 						</div>
 					</div>
 				</div>
-				<div class="col-sm-7">
+				<div class="col-sm-6">
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							<h3 class="panel-title">Logs</h3>
