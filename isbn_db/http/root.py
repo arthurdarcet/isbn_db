@@ -53,11 +53,11 @@ class App(utils.BaseApp):
 	
 	@utils.json_exposed
 	def add_book(self, title, authors=None, identifiers=None):
-		if authors is None:
+		if not authors:
 			authors = []
 		if not isinstance(authors, list):
 			authors = [authors]
-		if identifiers is None:
+		if not identifiers:
 			identifiers = []
 		if not isinstance(identifiers, list):
 			identifiers = [identifiers]
@@ -72,4 +72,11 @@ class App(utils.BaseApp):
 	
 	@utils.json_exposed
 	def add_isbn(self, start, end=None):
+		if len(end) == 12:
+			end += '?'
+		if len(start) == 12:
+			start += str(ISBN.checksum(start))
+		if len(start) != 13 or int(start[-1]) != ISBN.checksum(start) or len(end) != 13 or start[:3] != end[:3]:
+			raise ValueError('Invalid ISBN range ({}, {})'.format(start, end))
+		
 		return {'added': ISBN.add(start, end or start)}

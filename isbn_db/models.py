@@ -17,12 +17,12 @@ class ISBN(utils.Model):
 	
 	@classmethod
 	def add(cls, start, end):
-		res = 0
-		for isbn in range(int(start[:-1]), int(end[:-1]) + 1):
-			res += 1
-			cls(_id='{}{}'.format(isbn, cls.checksum(isbn))).save()
-		logger.info('Added %d ISBNs to the DB', res)
-		return res
+		res = cls.objects.insert([
+			cls(_id=int('{}{}'.format(isbn, cls.checksum(isbn))))
+			for isbn in range(int(start[:-1]), int(end[:-1]) + 1)
+		])
+		logger.info('Added %d ISBNs to the DB', len(res))
+		return len(res)
 	
 	@staticmethod
 	def checksum(I):
