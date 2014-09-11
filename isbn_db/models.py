@@ -20,7 +20,7 @@ class ISBN(utils.Model):
 		res = 0
 		for isbn in range(int(start[:-1]), int(end[:-1]) + 1):
 			res += 1
-			cls(isbn='{}{}'.format(isbn, cls.checksum(isbn))).save()
+			cls(_id='{}{}'.format(isbn, cls.checksum(isbn))).save()
 		logger.info('Added %d ISBNs to the DB', res)
 		return res
 	

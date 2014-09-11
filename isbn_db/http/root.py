@@ -40,7 +40,7 @@ class App(utils.BaseApp):
 		
 		return ISBN.objects \
 			.find({'book': {'$exists': True}}) \
-			.sort('isbn', 1) \
+			.sort('_id', 1) \
 			.skip(page * 50) \
 			.limit(50)
 	
@@ -48,7 +48,7 @@ class App(utils.BaseApp):
 	def search(self, q):
 		return ISBN.objects.find({'$or': [
 			{a: {'$regex': q, '$options': 'i'}}
-			for a in ('isbn', 'book.title', 'book.authors', 'book.identifiers')
+			for a in ('_id', 'book.title', 'book.authors', 'book.identifiers')
 		]})
 	
 	@utils.json_exposed
