@@ -5,9 +5,6 @@ from . import utils
 
 logger = logging.getLogger(__name__)
 
-class Book(utils.Model):
-	collection = 'books'
-
 class ISBN(utils.Model):
 	collection = 'isbns'
 	
@@ -23,10 +20,11 @@ class ISBN(utils.Model):
 		res = 0
 		for isbn in range(int(start[:-1]), int(end[:-1]) + 1):
 			res += 1
-			cls(isbn=isbn + cls.checksum(str(isbn))).save()
+			cls(isbn='{}{}'.format(isbn, cls.checksum(isbn))).save()
 		logger.info('Added %d ISBNs to the DB', res)
 		return res
 	
 	@staticmethod
 	def checksum(I):
+		I = str(I)
 		return (10 - (sum(int(I[2*i]) + 3*int(I[2*i+1]) for i in range(6)) % 10)) % 10

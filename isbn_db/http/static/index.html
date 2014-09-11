@@ -84,7 +84,7 @@
 							<h3 class="panel-title">New Book</h3>
 						</div>
 						<div class="panel-body">
-							<form class="form-horizontal" action="/add_book" id="add-book">
+							<form class="form-horizontal" action="add_book" id="add-book">
 								<div class="form-group">
 									<span class="col-md-3 control-label">Title</span>
 									<div class="col-md-9">
@@ -151,9 +151,9 @@
 		<script type="text/html" id="book-template">
 			<tr>
 				<td><code>{{isbn}}</code></td>
-				<td>{{title}}</td>
-				<td class="hidden-sm hidden-xs">{{authors}}</td>
-				<td class="hidden-xs">{{identifiers}}</td>
+				<td>{{book.title}}</td>
+				<td class="hidden-sm hidden-xs">{{book.authors}}</td>
+				<td class="hidden-xs">{{book.identifiers}}</td>
 			</tr>
 		</script>
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>

@@ -2,7 +2,6 @@ import cherrypy
 import logging
 import os.path
 
-from ..models import Book
 from ..models import ISBN
 from . import utils
 
@@ -39,7 +38,18 @@ class App(utils.BaseApp):
 		except TypeError:
 			raise cherrypy.NotFound()
 		
-		return Book.objects.find().sort('isbn', 1).skip(page * 50).limit(50)
+		return ISBN.objects \
+			.find({'book': {'$exists': True}}) \
+			.sort('isbn', 1) \
+			.skip(page * 50) \
+			.limit(50)
+	
+	@utils.json_exposed
+	def search(self, q):
+		return ISBN.objects.find({'$or': [
+			{a: {'$regex': q, '$options': 'i'}}
+			for a in ('isbn', 'book.title', 'book.authors', 'book.identifiers')
+		]})
 	
 	@utils.json_exposed
 	def add_book(self, title, authors=None, identifiers=None):
@@ -53,19 +63,12 @@ class App(utils.BaseApp):
 			identifiers = [identifiers]
 		
 		try:
-			return Book.objects.get(identifiers={'$in': identifiers})
-		except Book.DoesNotExist:
-			try:
-				book = Book.objects.get(title=title, authors=authors)
-			except Book.DoesNotExist:
-				isbn = ISBN.free()
-				book = Book(title=title, authors=authors, identifiers=identifiers, isbn=isbn['isbn'])
-				isbn['book'] = book['_id']
-				isbn.save()
-			else:
-				book['identifiers'] += identifiers
-			book.save()
-			return book
+			return ISBN.objects.get(**{'book.identifiers': {'$in': identifiers}})
+		except ISBN.DoesNotExist:
+			isbn = ISBN.free()
+			isbn['book'] = {'title': title, 'authors': authors, identifiers: 'identifiers'}
+			isbn.save()
+			return isbn
 	
 	@utils.json_exposed
 	def add_isbn(self, start, end=None):

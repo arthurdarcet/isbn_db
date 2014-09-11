@@ -7,3 +7,5 @@ def shell(**kwargs):
 
 def http(**kwargs):
 	http_module.Server(**kwargs).start()
+
+default = http

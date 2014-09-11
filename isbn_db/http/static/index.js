@@ -31,7 +31,6 @@ App.Collections.Books = Backbone.Collection.extend({
 		
 		this.on('add', _.bind(function(model) {
 			model.view = new App.Views.Book({model: model});
-			model.view.$('*[data-toggle="tooltip"]').tooltip();
 			this.container.append(model.view.$el);
 		}, this));
 	},
