@@ -39,6 +39,16 @@ def json_exposed(fn):
 	wrapper.exposed = True
 	return wrapper
 
+def paginated(fn):
+	@functools.wraps(fn)
+	def wrapper(*args, page=0, **kwargs):
+		try:
+			page = int(page)
+		except TypeError:
+			raise cherrypy.NotFound()
+		return fn(*args, **kwargs).skip(page * 50).limit(50)
+	return wrapper
+
 
 class MemoryHandler(logging.handlers.BufferingHandler):
 	def __init__(self, *args, **kwargs):

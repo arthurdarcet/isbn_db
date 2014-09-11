@@ -32,24 +32,24 @@ class App(utils.BaseApp):
 		return self._logs.buffer[::-1]
 	
 	@utils.json_exposed
-	def books(self, page=0):
-		try:
-			page = int(page)
-		except TypeError:
-			raise cherrypy.NotFound()
-		
-		return ISBN.objects \
-			.find({'book': {'$exists': True}}) \
-			.sort('_id', 1) \
-			.skip(page * 50) \
-			.limit(50)
+	@utils.paginated
+	def books(self):
+		return ISBN.objects.find({'book': {'$exists': True}}).sort('_id', 1)
 	
 	@utils.json_exposed
+	@utils.paginated
 	def search(self, q):
-		return ISBN.objects.find({'$or': [
-			{a: {'$regex': q, '$options': 'i'}}
-			for a in ('_id', 'book.title', 'book.authors', 'book.identifiers')
-		]})
+		if len(q) in (12, 13):
+			try: int(q)
+			except ValueError: pass
+			else:
+				if len(q) == 12: q += str(ISBN.checksum(q))
+				return ISBN.objects.find({'_id': int(q)})
+		else:
+			return ISBN.objects.find({'$or': [
+				{a: {'$regex': q, '$options': 'i'}}
+				for a in ('book.title', 'book.authors', 'book.identifiers')
+			]})
 	
 	@utils.json_exposed
 	def add_book(self, title, authors=None, identifiers=None):
@@ -66,7 +66,7 @@ class App(utils.BaseApp):
 			return ISBN.objects.get(**{'book.identifiers': {'$in': identifiers}})
 		except ISBN.DoesNotExist:
 			isbn = ISBN.free()
-			isbn['book'] = {'title': title, 'authors': authors, identifiers: 'identifiers'}
+			isbn['book'] = {'title': title, 'authors': authors, 'identifiers': identifiers}
 			isbn.save()
 			return isbn
 	
