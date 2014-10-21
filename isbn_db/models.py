@@ -10,7 +10,7 @@ class ISBN(utils.Model):
 	
 	@classmethod
 	def free(cls):
-		res = cls.objects.find_one(book=None)
+		res = cls.objects.find_one({'book': None})
 		if res is None:
 			raise ValueError('No more free isbns in the DB')
 		return res
