@@ -1,4 +1,5 @@
-cherrypy       >= 3.2.4
-nose2          >= 0.4.7
-pymongo        >= 2.7
-pyyaml         >= 3.10
+axel     >= 0.0.4
+nose2    >= 0.4.7
+pymongo  >= 2.7
+pyyaml   >= 3.10
+tornado  >= 4.0.2

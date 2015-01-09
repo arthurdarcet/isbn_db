@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import tornado.ioloop
 
 
 parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
@@ -10,20 +11,14 @@ parser.add_argument('-d', '--debug', action='store_true', help="Log debug messag
 parser.add_argument('-q', '--quiet', action='store_true', help="Less verbose output", default=False)
 subparsers = parser.add_subparsers()
 
-###
 subparse = subparsers.add_parser('http', help='Run the http server')
-subparse.set_defaults(func='http')
-
-###
-subparse = subparsers.add_parser('shell', help='Launch IPython')
-subparse.set_defaults(func='shell')
-
 
 args = parser.parse_args()
 
 from . import setup
 setup(args)
+from . import http
 
-from . import commands
 
-sys.exit(getattr(commands, getattr(args, 'func', 'default'))(**args.__dict__) or 0)
+http.Server()
+tornado.ioloop.IOLoop.instance().start()

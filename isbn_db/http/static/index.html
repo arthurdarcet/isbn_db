@@ -5,7 +5,7 @@
 		<meta charset="utf-8">
 		<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 		<style>
-			#logs .data {
+			#logs {
 				font-size: x-small;
 				background: none;
 				border: none;
@@ -54,7 +54,7 @@
 							<h3 class="panel-title">New ISBN block</h3>
 						</div>
 						<div class="panel-body">
-							<form class="form-horizontal" action="add_isbn" id="add-isbn">
+							<form class="form-horizontal" id="add-isbn">
 								<div class="form-group">
 									<span class="col-md-3 control-label">Start</span>
 									<div class="col-md-9">
@@ -84,7 +84,7 @@
 							<h3 class="panel-title">New Book</h3>
 						</div>
 						<div class="panel-body">
-							<form class="form-horizontal" action="add_book" id="add-book">
+							<form class="form-horizontal" id="add-book">
 								<div class="form-group">
 									<span class="col-md-3 control-label">Title</span>
 									<div class="col-md-9">
@@ -118,9 +118,8 @@
 						<div class="panel-heading">
 							<h3 class="panel-title">Logs</h3>
 						</div>
-						<div class="panel-body" id="logs">
-							<div class="loading">Loading…</div>
-							<pre class="data hidden"></pre>
+						<div class="panel-body">
+							<pre id="logs"></pre>
 						</div>
 					</div>
 				</div>

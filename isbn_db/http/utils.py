@@ -1,83 +1,109 @@
-import cherrypy
-import functools
-import itertools
+import axel
+import bson
+import datetime
 import json
 import logging
 import logging.handlers
-
-from ..utils import *
+import threading
+import tornado.web
 
 
 logger = logging.getLogger(__name__)
 
-def json_exposed(fn):
-	@functools.wraps(fn)
-	def wrapper(*args, **kwargs):
-		try:
-			code = 200
-			value = fn(*args, **kwargs)
-		except Model.DoesNotExist as err:
-			code = 404
-			value = {'status': 404, 'error': repr(err)}
-		except cherrypy.HTTPError as err:
-			code = err.code
-			value = {'status': err.code, 'error': err.reason}
-		except Exception as err:
-			logger.exception('{} calling {}({})'.format(
-				err.__class__.__qualname__,
-				fn.__name__,
-				', '.join(itertools.chain(
-					(repr(a) for a in args[1:]),
-					('{}={!r}'.format(k, v) for k, v in kwargs.items()),
-				)),
-			))
-			code = 500
-			value = {'status': 500, 'error': '{}: {}'.format(err.__class__.__qualname__, err)}
-		cherrypy.response.headers['Content-Type'] = 'application/json'
-		cherrypy.response.status = code
-		return json_encoder.encode(value).encode('utf8')
-	wrapper.exposed = True
-	return wrapper
-
-def paginated(fn):
-	@functools.wraps(fn)
-	def wrapper(*args, page=0, **kwargs):
-		try:
-			page = int(page)
-		except TypeError:
-			raise cherrypy.NotFound()
-		return fn(*args, **kwargs).skip(page * 50).limit(50)
-	return wrapper
-
-
-class MemoryHandler(logging.handlers.BufferingHandler):
+class JSONEncoder(json.JSONEncoder):
 	def __init__(self, *args, **kwargs):
+		kwargs.setdefault('separators', (',', ':'))
 		super().__init__(*args, **kwargs)
-		formatter = logging.Formatter(
-			fmt='{asctime} | {name:^31} | {levelname:^8} | {message}',
+	
+	def default(self, o):
+		if isinstance(o, datetime.datetime):
+			return o.isoformat()
+		if isinstance(o, bson.ObjectId):
+			return str(o)
+		try:
+			iterable = iter(o)
+		except TypeError:
+			pass
+		else:
+			return list(iterable)
+		return super().default(o)
+json_encoder = JSONEncoder()
+
+
+class RequestHandler(tornado.web.RequestHandler):
+	def log_exception(self, *e):
+		logger.critical('Uncaught exception in %s:\n', self._request_summary(), exc_info=e)
+
+
+class JsonHandler(RequestHandler):
+	def prepare(self):
+		if self.request.headers.get('Content-Type', '').startswith('application/json'):
+			self.request.json = json.loads(self.request.body.decode('utf-8'))
+	
+	def set_default_headers(self):
+		self.set_header('Content-Type', 'application/json; charset=UTF-8')
+	
+	def write(self, chunk):
+		super().write(json_encoder.encode(chunk) + '\n')
+	
+	def write_error(self, status_code, **kwargs):
+		self.write({'code': status_code, 'error': self._reason})
+		self.finish()
+
+
+class MetaSSEHandler(type):
+	def __new__(cls, name, bases, attrs):
+		attrs['connections'] = []
+		attrs['on_open'] = axel.Event()
+		return super().__new__(cls, name, bases, attrs)
+
+
+class JsonSSEHandler(RequestHandler, metaclass=MetaSSEHandler):
+	def set_default_headers(self):
+		self.set_header('Content-Type','text/event-stream; charset=utf-8')
+		self.set_header('Cache-Control','no-cache')
+		self.set_header('Connection','keep-alive')
+	
+	@tornado.web.asynchronous
+	def get(self):
+		self.connections.append(self)
+		self.on_open(self)
+	
+	def on_open(self):
+		pass
+	
+	def on_finish(self):
+		self.connections.remove(self)
+	
+	@classmethod
+	def broadcast(cls, *args, **kwargs):
+		for conn in cls.connections:
+			conn.emit(*args, **kwargs)
+	
+	def emit(self, data, event=None):
+		if event is not None:
+			self.write('event: {}\n'.format(event))
+		self.write('data: {}\n\n'.format(json.dumps(data)))
+		self.flush()
+
+
+class EventsLogHandler(logging.Handler):
+	def __init__(self, capacity):
+		super().__init__()
+		self.on_log = axel.Event()
+		self.lock = threading.Lock()
+		self.buffer = []
+		self.capacity = capacity
+		self.formatter = logging.Formatter(
+			fmt='{asctime} | {name:^15} | {levelname:^8} | {message}',
 			datefmt='%H:%M:%S',
 			style='{'
 		)
-		self.setFormatter(formatter)
 	
 	def emit(self, record):
-		self.buffer.append(self.format(record))
+		msg = self.format(record)
+		self.on_log(msg)
+		self.buffer.append(msg)
 		if len(self.buffer) > self.capacity:
-			self.acquire()
-			try:
+			with self.lock:
 				del(self.buffer[0])
-			finally:
-				self.release()
-
-
-class _LogManager(cherrypy._cplogging.LogManager):
-	def __init__(self):
-		self.error_log = logging.getLogger('cherrypy.error')
-		self.access_log = logging.getLogger('cherrypy.access')
-		self.access_log_format =  '{h}, {s} "{r}"'
-
-class BaseApp:
-	def mount(self):
-		app = cherrypy.Application(self, self.mount_to, self.config)
-		app.log = _LogManager()
-		cherrypy.tree.mount(app)

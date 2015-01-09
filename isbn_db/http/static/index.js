@@ -1,7 +1,6 @@
 $.ajaxSettings.traditional = true;
 
 App = {};
-App.auto_refresh = true;
 App.Collections = {};
 App.Views = {};
 
@@ -21,7 +20,6 @@ App.Views.Book = Backbone.View.extend({
 });
 
 App.Collections.Books = Backbone.Collection.extend({
-	url: 'books',
 	current_page: -1,
 	params: {},
 	model: Backbone.Model.extend({idAttribute: '_id'}),
@@ -45,7 +43,7 @@ App.Collections.Books = Backbone.Collection.extend({
 		
 		$.ajax({
 			type: 'GET',
-			url: '/' + this.url + '?' + $.param(_.extend({page: this.current_page}, this.params)),
+			url: '/books' + '?' + $.param({page: this.current_page, q: this.q}),
 			context: this
 		}).done(function(data, status) {
 			if (this.current_page == 0) {
@@ -58,14 +56,7 @@ App.Collections.Books = Backbone.Collection.extend({
 	},
 	
 	search: function(q) {
-		if (q) {
-			this.url = 'search';
-			this.params.q = q;
-		}
-		else {
-			this.url = 'books';
-			this.params = {};
-		}
+		this.q = q;
 		this.current_page = -1;
 		this.load_next_page();
 	}
@@ -79,30 +70,9 @@ App.Views.SearchBar = Backbone.View.extend({
 
 	keyup: function(evt) {
 		evt.preventDefault();
-		if (evt.keyCode == 13 || App.books.params.q != this.$el.val()) {
+		if (evt.keyCode == 13 || App.books.q != this.$el.val()) {
 			App.books.search(this.$el.val());
 		}
-	}
-});
-
-App.Views.Logs = Backbone.View.extend({
-	REFRESH_INTERVAL: 1000,
-	el: '#logs',
-	
-	refresh: function() {
-		$.ajax({
-			type: 'GET',
-			url: '/logs',
-			context: this
-		}).done(function(data, status) {
-			this.$('.loading').hide();
-			this.$('.data').removeClass('hidden');
-			this.$('.data').text(data.join("\n"));
-		}).always(function() {
-			if (App.auto_refresh) {
-				setTimeout(_.bind(this.refresh, this), this.REFRESH_INTERVAL);
-			}
-		});
 	}
 });
 
@@ -118,7 +88,7 @@ App.Views.Form = Backbone.View.extend({
 		
 		$.ajax({
 			type: 'POST',
-			url: this.$el.attr('action'),
+			url: this.action,
 			data: this.data(),
 		}).done(_.bind(function(data, status) {
 			if(this.done) this.done(data);
@@ -136,6 +106,7 @@ App.Views.Form = Backbone.View.extend({
 
 App.Views.AddBookForm = App.Views.Form.extend({
 	el: '#add-book',
+	action: 'books',
 	
 	data: function() {
 		return {
@@ -152,24 +123,22 @@ App.Views.AddBookForm = App.Views.Form.extend({
 
 App.Views.AddISBNForm = App.Views.Form.extend({
 	el: '#add-isbn',
+	action: 'isbns',
 	
 	data: function() {
 		return {
 			start: this.$('input[name=start]').val(),
-			end: this.$('input[name=end]').val().split(','),
+			end: this.$('input[name=end]').val(),
 		};
 	}
 });
 
 
 $(document).ready(function() {
-	App.logs = new App.Views.Logs();
 	App.books = new App.Collections.Books();
 	App.search_bar = new App.Views.SearchBar();
 	App.add_book_form = new App.Views.AddBookForm();
 	App.add_isbn_form = new App.Views.AddISBNForm();
-	
-	App.logs.refresh();
 	
 	App.books.load_next_page();
 	$(window).scroll(function(){
@@ -177,13 +146,9 @@ $(document).ready(function() {
 			App.books.load_next_page();
 		}
 	});
+	
+	App.events = new EventSource('/events');
+	App.events.addEventListener('log', function(evt) {
+		$('#logs').prepend(JSON.parse(evt.data).replace('<', '&lt;').replace('>', '&gt;') + '\n');
+	});
 });
-
-
-if ('auto_refresh' in localStorage) {
-	App.auto_refresh = (localStorage['auto_refresh'] == 'true');
-}
-App.set_auto_refresh = function(val) {
-	localStorage['auto_refresh'] = val;
-	App.auto_refresh = val;
-}
