@@ -7,28 +7,10 @@ import logging.handlers
 import threading
 import tornado.web
 
+from ..utils import json_encoder
+
 
 logger = logging.getLogger(__name__)
-
-class JSONEncoder(json.JSONEncoder):
-	def __init__(self, *args, **kwargs):
-		kwargs.setdefault('separators', (',', ':'))
-		super().__init__(*args, **kwargs)
-	
-	def default(self, o):
-		if isinstance(o, datetime.datetime):
-			return o.isoformat()
-		if isinstance(o, bson.ObjectId):
-			return str(o)
-		try:
-			iterable = iter(o)
-		except TypeError:
-			pass
-		else:
-			return list(iterable)
-		return super().default(o)
-json_encoder = JSONEncoder()
-
 
 class RequestHandler(tornado.web.RequestHandler):
 	def log_exception(self, *e):
@@ -57,7 +39,6 @@ class MetaSSEHandler(type):
 		attrs['on_open'] = axel.Event()
 		return super().__new__(cls, name, bases, attrs)
 
-
 class JsonSSEHandler(RequestHandler, metaclass=MetaSSEHandler):
 	def set_default_headers(self):
 		self.set_header('Content-Type','text/event-stream; charset=utf-8')
@@ -67,31 +48,35 @@ class JsonSSEHandler(RequestHandler, metaclass=MetaSSEHandler):
 	@tornado.web.asynchronous
 	def get(self):
 		self.connections.append(self)
-		self.on_open(self)
+		logger.debug('New event listener %s (has %s clients)', self, len(self.connections))
+		self.on_open()
 	
+	@tornado.gen.coroutine
 	def on_open(self):
 		pass
 	
-	def on_finish(self):
+	def on_connection_close(self):
 		self.connections.remove(self)
+		logger.debug('Removed event listener %s (has %s clients)', self, len(self.connections))
 	
 	@classmethod
+	@tornado.gen.coroutine
 	def broadcast(cls, *args, **kwargs):
 		for conn in cls.connections:
-			conn.emit(*args, **kwargs)
+			yield conn.emit(*args, **kwargs)
 	
+	@tornado.gen.coroutine
 	def emit(self, data, event=None):
 		if event is not None:
 			self.write('event: {}\n'.format(event))
 		self.write('data: {}\n\n'.format(json.dumps(data)))
-		self.flush()
+		yield self.flush()
 
 
 class EventsLogHandler(logging.Handler):
 	def __init__(self, capacity):
 		super().__init__()
 		self.on_log = axel.Event()
-		self.lock = threading.Lock()
 		self.buffer = []
 		self.capacity = capacity
 		self.formatter = logging.Formatter(
@@ -105,5 +90,5 @@ class EventsLogHandler(logging.Handler):
 		self.on_log(msg)
 		self.buffer.append(msg)
 		if len(self.buffer) > self.capacity:
-			with self.lock:
-				del(self.buffer[0])
+			# no need to use a lock, see https://hg.python.org/cpython/file/350b8e109c42/Lib/logging/__init__.py
+			del(self.buffer[0])

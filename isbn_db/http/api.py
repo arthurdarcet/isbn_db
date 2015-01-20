@@ -1,4 +1,5 @@
 import logging
+import tornado.gen
 
 from ..models import ISBN
 from . import utils
@@ -59,16 +60,15 @@ class ISBNs(utils.JsonHandler):
 		self.write({'added': ISBN.add(start, end)})
 
 
-class Events(utils.JsonSSEHandler):
-	pass
-
-
 mem_log = utils.EventsLogHandler(500)
 logging.root.addHandler(mem_log)
-def backlog(conn):
-	for l in mem_log.buffer:
-		conn.emit(l, event='log')
-Events.on_open += backlog
+
+class Events(utils.JsonSSEHandler):
+	@tornado.gen.coroutine
+	def on_open(self):
+		for l in mem_log.buffer:
+			yield self.emit(l, event='log')
+
 mem_log.on_log += lambda msg: Events.broadcast(msg, event='log')
 
 urls = [
